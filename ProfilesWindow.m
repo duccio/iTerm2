@@ -147,6 +147,33 @@ typedef enum {
     }
 }
 
+- (IBAction)openBookmarkInPaneInWindow:(id)sender
+{
+    NSArray* guids = [tableView_ orderedSelectedGuids];
+    if (![guids count]) {
+        NSBeep();
+        return;
+    }
+    BOOL isFirst = YES;
+    for (NSString* guid in guids) {
+        PseudoTerminal* terminal = [[iTermController sharedInstance] currentTerminal];
+        Profile* bookmark = [[ProfileModel sharedInstance] bookmarkWithGuid:guid];
+        if (isFirst) {
+            // New tab
+            [[iTermController sharedInstance] launchBookmark:bookmark inTerminal:terminal];
+        } else {
+            // Split
+            [terminal splitVertically:HORIZONTAL_PANE
+                         withBookmark:bookmark
+                        targetSession:[[terminal currentTab] activeSession]];
+        }
+        isFirst = NO;
+    }
+    if ([closeAfterOpeningBookmark_ state] == NSOnState) {
+        [[self window] close];
+    }
+}
+
 - (void)updatePaneButtons:(id)sender
 {
     [self profileTableSelectionDidChange:tableView_];
@@ -166,8 +193,10 @@ typedef enum {
             [newTabsInNewWindowButton_ setEnabled:YES];
             [horizontalPaneButton_ setEnabled:YES];
             [verticalPaneButton_ setEnabled:YES];
+            [panesButton_ setEnabled:YES];
         } else {
             [newTabsInNewWindowButton_ setEnabled:NO];
+            [panesButton_ setEnabled:NO];
             [horizontalPaneButton_ setEnabled:windowExists];
             [verticalPaneButton_ setEnabled:windowExists];
         }
